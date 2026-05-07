@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>FlliP(TM) - Rainbow Code(TM)</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --glass: rgba(255, 255, 255, 0.1);
+            --apple-red: #fa2d48;
+            --text-main: #ffffff;
+            --text-sub: #86868b;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 배경 블러 효과 (다이나믹 배경용) */
+        .dynamic-bg {
+            position: fixed;
+            top: -50px; left: -50px;
+            width: calc(100% + 100px);
+            height: calc(100% + 100px);
+            background: linear-gradient(135deg, #4a1a6a, #1a3a6a);
+            filter: blur(80px);
+            z-index: -1;
+            transition: background 1s ease;
+        }
+
+        .player-card {
+            width: 400px;
+            padding: 30px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* 앨범 아트 */
+        .album-art-container {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 30px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1);
+        }
+
+        .album-art-container.playing { transform: scale(1.05); }
+        .album-art-container img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 곡 정보 */
+        .track-info { margin-bottom: 30px; }
+        .track-info h1 { font-size: 1.5rem; margin: 0; font-weight: 600; letter-spacing: -0.02rem; }
+        .track-info p { color: var(--apple-red); font-weight: 500; margin: 8px 0 0; }
+
+        /* 재생바 (디자인 핵심) */
+        .progress-section { margin-bottom: 25px; }
+        .time-slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+        }
+        .time-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px; height: 12px;
+            background: white; border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .time-labels {
+            display: flex; justify-content: space-between;
+            font-size: 0.75rem; color: var(--text-sub); margin-top: 10px;
+        }
+
+        /* 컨트롤러 */
+        .controls {
+            display: flex; justify-content: space-around; align-items: center;
+            font-size: 1.8rem;
+        }
+        .btn { cursor: pointer; transition: 0.2s; user-select: none; }
+        .btn:hover { opacity: 0.7; }
+        .play-pause { font-size: 3rem; }
+
+        .back-btn {
+            position: absolute; top: 30px; left: 30px;
+            color: white; text-decoration: none; font-size: 0.9rem;
+            opacity: 0.6; transition: 0.3s;
+        }
+        .back-btn:hover { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="dynamic-bg" id="bg-glow"></div>
+    <a href="../index.html" class="back-btn">✕ 가려두기</a>
+
+    <div class="player-card">
+        <div class="album-art-container" id="art-box">
+            <img id="album-img" src="../img/default.png">
+        </div>
+
+        <div class="track-info">
+            <h1 id="title">레인보우 코드</h1>
+            <p id="artist">2026</p>
+        </div>
+
+        <div class="progress-section">
+            <input type="range" class="time-slider" id="seek-bar" value="0" min="0" step="1">
+            <div class="time-labels">
+                <span id="current-time">0:00</span>
+                <span id="total-time">0:00</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="btn" onclick="prevTrack()">⏮</div>
+            <div class="btn play-pause" id="play-btn" onclick="togglePlay()">▶</div>
+            <div class="btn" onclick="nextTrack()">⏭</div>
+        </div>
+    </div>
+
+    <script>
+        // 멀티트랙 데이터베이스 (로컬 파일 경로 사용 권장)
+        const playlist = [
+            { title: "!ntro", artist: "레인보우 코드(TM)", src: "../music/rc/01.mp3", art: "../img/레인보우 코드_CD.png", color: "#1a3a6a" },
+            { title: "Only See Mii Now", artist: "레인보우 코드(TM)", src: "../music/rc/02.mp3", art: "../img/레인보우 코드_CD.png", color: "#1a3a6a" },
+            { title: "Trip to Netherlands", artist: "레인보우 코드(TM)", src: "../music/rc/03.mp3", art: "../img/레인보우 코드_CD.png", color: "#1a3a6a" },
+            { title: "0utro", artist: "레인보우 코드(TM)", src: "../music/rc/04.mp3", art: "../img/레인보우 코드_CD.png", color: "#1a3a6a" },
+
+        ];
+
+        let trackIndex = 0;
+        let isPlaying = false;
+        const audio = new Audio();
+
+        // DOM 요소
+        const playBtn = document.getElementById('play-btn');
+        const seekBar = document.getElementById('seek-bar');
+        const artBox = document.getElementById('art-box');
+        const bgGlow = document.getElementById('bg-glow');
+
+        // 초기 트랙 로드 로직 (URL 파라미터가 있다면 해당 인덱스부터)
+        function loadTrack(index) {
+            const track = playlist[index];
+            document.getElementById('title').innerText = track.title;
+            document.getElementById('artist').innerText = track.artist;
+            document.getElementById('album-img').src = track.art;
+            bgGlow.style.background = track.color;
+            audio.src = track.src;
+            
+            audio.onloadedmetadata = () => {
+                seekBar.max = Math.floor(audio.duration);
+                document.getElementById('total-time').innerText = formatTime(audio.duration);
+            };
+        }
+
+        function togglePlay() {
+            if (isPlaying) {
+                audio.pause();
+                playBtn.innerText = "▶";
+                artBox.classList.remove('playing');
+            } else {
+                audio.play();
+                playBtn.innerText = "II";
+                artBox.classList.add('playing');
+            }
+            isPlaying = !isPlaying;
+        }
+
+        function nextTrack() {
+            trackIndex = (trackIndex + 1) % playlist.length;
+            loadTrack(trackIndex);
+            if (isPlaying) audio.play();
+        }
+
+        function prevTrack() {
+            trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
+            loadTrack(trackIndex);
+            if (isPlaying) audio.play();
+        }
+
+        // 재생바 업데이트
+        audio.ontimeupdate = () => {
+            seekBar.value = Math.floor(audio.currentTime);
+            document.getElementById('current-time').innerText = formatTime(audio.currentTime);
+            
+            // 재생바 배경색 진행률 표시 (애플스타일)
+            const ratio = (audio.currentTime / audio.duration) * 100;
+            seekBar.style.background = `linear-gradient(to right, #fff ${ratio}%, rgba(255,255,255,0.2) ${ratio}%)`;
+        };
+
+        // 재생바 조작
+        seekBar.oninput = () => {
+            audio.currentTime = seekBar.value;
+        };
+
+        function formatTime(seconds) {
+            let min = Math.floor(seconds / 60);
+            let sec = Math.floor(seconds % 60);
+            return `${min}:${sec < 10 ? '0' + sec : sec}`;
+        }
+
+        // 자동 다음곡 재생
+        audio.onended = nextTrack;
+
+        // 초기 실행
+        loadTrack(0);
+    </script>
+</body>
+</html>
