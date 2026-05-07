@@ -1,0 +1,115 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    background: radial-gradient(circle at center, #2e3a59 0%, #0b0d13 100%);
+    color: white;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.ps5-container {
+    padding: 40px 60px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 상단바 */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.main-nav span {
+    margin-right: 30px;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.main-nav span.active {
+    opacity: 1;
+    border-bottom: 2px solid white;
+}
+
+.status-nav {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+/* 게임 아이콘 리스트 */
+.content {
+    margin-top: 50px;
+}
+
+.game-list {
+    display: flex;
+    gap: 15px;
+}
+
+.game-item {
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.3s ease, border 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.game-item p {
+    position: absolute;
+    bottom: -30px;
+    font-size: 12px;
+    white-space: nowrap;
+    display: none;
+}
+
+.game-item.active {
+    transform: scale(1.2);
+    border: 3px solid white;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.game-item.active p {
+    display: block;
+}
+
+.game-item img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+/* 하단 버튼 섹션 */
+.game-info {
+    margin-top: auto;
+    margin-bottom: 50px;
+}
+
+.game-info h1 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.play-btn {
+    padding: 15px 40px;
+    background: white;
+    color: black;
+    border: none;
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+}
